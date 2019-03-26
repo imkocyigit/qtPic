@@ -90,6 +90,7 @@ int * portreadN(void) {
         int *d;
         int i=0;
         d=data;
+
         read(fd,&msB,1);
         msI=msB;
         printf("\n msb of freq :%d---",msI);
@@ -102,13 +103,10 @@ int * portreadN(void) {
 
                 read(fd,&msB,1);
                 msI=msB;
-                printf("\n msb of adc%d :%d--",i,msI);
                 read(fd,&lsB,1);
                 lsI=lsB;
                 if(lsI<0)lsI=lsI+256;
-                printf("lsb of adc%d :%d--",i,lsI);
 
-                printf(" adc value of %d is %d\n",i,(msI*256)+lsI);
                *d=(msI*256)+lsI;
                d++;
 
@@ -134,7 +132,7 @@ char * readport(void) {
                 *ds=buff;
                 ds++;
         }
-        printf("\nread datas ::: %s\n",datset);
+        printf("\nread datas ::: %s",datset);
         return datset;
 }
 
@@ -152,140 +150,13 @@ void confport(void) {
 }
 
 void writeport(char m) {
-        if(m=='q') write(fd,"q\0",2);
-        if(m=='t') write(fd,"t\0",2);
-        if(m=='s') write(fd,"s\0",2);
+        if(m=='q') write(fd,"q",1);
+        if(m=='t') write(fd,"t",1);
+        if(m=='s') write(fd,"s",1);
+        if(m=='r') write(fd,"r",1);
 }
 
 
-struct rets* ikea(char *p) {
-        struct rets *retvals=(struct rets*)malloc(sizeof(struct rets));
-        retvals->adc=(int *)malloc(50*sizeof(int));
-        retvals->fdev=(int *)malloc(49*sizeof(int));
-        retvals->sdev=(int *)malloc(48*sizeof(int));
-        char *dsp=p;
-        char freq[5];
-        char temp[5];
-        int adc[50];
-        int fdev[49];
-        int sdev[48];
-        int freqint;
-        int mfi1;
-        int mff1;
-        int mfi2;
-        int mff2;
-        int i,j;
-        for(i=0;i<5;i++) {
-                freq[i]=*dsp;
-                dsp++;
-        }
-        freqint=atoi(freq);
-        retvals->freqint=freqint;
-        printf("\nFrequency: %d ",freqint);
-
-        for(i=0;i<50;i++) {
-
-                for(j=0;j<5;j++) {
-                temp[j]=*dsp;
-                dsp++;
-                }
-        retvals->adc[i]=atoi(temp);
-
-        }
-
-
-
-        j=1;
-        while(j<50) {
-            if((adc[j]<adc[j-1])){
-                fdev[j-1]=(adc[j]-adc[j-1])*(-1);
-            }
-            else    {
-                fdev[j-1]=(adc[j]-adc[j-1]);
-            }
-
-            j++;
-
-        }
-
-        int predic = 40;
-
-        j=0;
-        while(j<49) {
-            if(fdev[j]<= predic/2){
-                fdev[j]=0;
-            }
-            else if(fdev[j]>= predic/2)   {
-                fdev[j]=1;
-            }
-            retvals->fdev[j]=fdev[j];
-            j++;
-
-        }
-
-        printf("\nfdev calculated\n");
-        j=1;
-        while(j<48) {
-            sdev[j-1]=(abs(fdev[j]-fdev[j-1]));
-            if(sdev[j-1]<=20)    {
-                sdev[j-1]=0;
-            }
-            retvals->sdev[j-1]=sdev[j-1];
-
-            j++;
-
-        }
-        printf("sdev calculated\n");
-        int countd1d = 0, curr_cnt = 1, freq_d1d = 7, key = 0,k=0,m=0;
-        for(k = 0; k < 48; k++)    {
-            key = fdev[k];
-            for(m =k+1; m < 49; m++) {
-                if(key == fdev[m] && freq_d1d != key)  {
-                    curr_cnt++;
-                }
-            }
-            if(countd1d < curr_cnt)    {
-                countd1d = curr_cnt; // frequency
-                curr_cnt = 1;
-                freq_d1d = key; //Most Frequent index
-            }
-        }
-
-
-        int countd2d = 0, curr_cnt2 = 1, freq_d2d = 7, key2 = 0,k2=0,m2=0;
-        for(k2 = 0; k2 < 47; k2++)    {
-            key2 = sdev[k2];
-            for(m2 =k2+1; m2 < 48; m2++) {
-                if(key2 == sdev[m2] && freq_d2d != key2)  {
-                    curr_cnt2++;
-                }
-            }
-            if(countd2d < curr_cnt2)    {
-                countd2d = curr_cnt2; // frequency
-                curr_cnt2 = 1;
-                freq_d2d = key2; //Most Frequent index
-            }
-        }
-        printf("signal type will be written\n");
-        if(freq_d1d == 0 && freq_d2d==0){
-        writeport('q');
-        printf("signal type sent\n");
-        }
-        if(freq_d1d == 1 && freq_d2d == 0) {
-                writeport('t');
-                printf("signal type sent\n");
-        }
-        if(freq_d2d != 1 && freq_d1d != 0 && freq_d2d != 0 && freq_d1d != 1) {
-                writeport('s');
-                printf("signal type sent\n");
-        }
-
-
-
-
-
-        return retvals;
-}
 struct rets* compose(int *p) {
         struct rets *retvals=(struct rets*)malloc(sizeof(struct rets));
         retvals->adc=(int *)malloc(50*sizeof(int));
@@ -312,7 +183,6 @@ struct rets* compose(int *p) {
 
                 adc[i-1]=dsp[i];
                 retvals->adc[i-1]=adc[i-1];
-               printf("taken value %d\n",retvals->adc[i-1]);
         }
 
 
@@ -326,7 +196,6 @@ struct rets* compose(int *p) {
             }
 
             j++;
-        printf("first derivative -> %d\n",fdev[j-1]);
         }
 
         int predic = 40;
@@ -339,6 +208,7 @@ struct rets* compose(int *p) {
             else if(fdev[j]>= predic/2)   {
                 fdev[j]=1;
             }
+
             retvals->fdev[j]=fdev[j];
             j++;
 
@@ -400,8 +270,6 @@ struct rets* compose(int *p) {
                 writeport('s');
                 printf("signal type sent\n");
         }
-
-
 
 
 
